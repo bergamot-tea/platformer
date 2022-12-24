@@ -147,7 +147,7 @@ class PlayerCharacter(arcade.Sprite):
 
 
 
-class MyGame(arcade.Window):
+class GameView(arcade.View):
     """
     Main application class.
     """
@@ -155,10 +155,11 @@ class MyGame(arcade.Window):
     def __init__(self):
 
         # Call the parent class and set up the window
-        super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT,
-                         SCREEN_TITLE, resizable=True)
-
+        #super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT,SCREEN_TITLE, resizable=True)
+        super().__init__()
+        
         # Track the current state of what key is pressed
+        self.window.set_mouse_visible(False)
         self.left_pressed = False
         self.right_pressed = False
         self.up_pressed = False
@@ -208,8 +209,8 @@ class MyGame(arcade.Window):
         """Set up the game here. Call this function to restart the game."""
 
         # Setup the Cameras
-        self.camera_sprites = arcade.Camera(self.width, self.height)
-        self.camera_gui = arcade.Camera(self.width, self.height)
+        self.camera_sprites = arcade.Camera(self.window.width, self.window.height)#когда приложение было на основе окна а не представления, было без window
+        self.camera_gui = arcade.Camera(self.window.width, self.window.height)
 
         # Name of map file to load
         map_name = f"./level_{self.level}.json"
@@ -455,10 +456,12 @@ class MyGame(arcade.Window):
         exit_hit_list = arcade.check_for_collision_with_list(
             self.player_sprite, self.scene["exit"]
         )
-
-        if self.score == 3:
+        '''
+        if self.score == 1:
             self.scene["end_ladder"].visible = True
-
+            view = GameOverView()
+            self.window.show_view(view)
+        '''
         # Loop through each coin we hit (if any) and remove it
         for coin in coin_hit_list:
             # Remove the coin
@@ -514,10 +517,105 @@ class MyGame(arcade.Window):
         self.camera_gui.resize(int(width), int(height))
 
 
+class StartView(arcade.View):
+    
+    def __init__(self):
+        """ This is run once when we switch to this view """
+        super().__init__()
+        
+        self.x1 = 640#координаты и размеры первого пункта меню (Играть)
+        self.y1 = 400
+        self.w1 = 235
+        self.h1 = 77
+        
+        self.x2 = 640#координаты и размеры второго пункта меню (Выход)
+        self.y2 = 200
+        self.w2 = 235
+        self.h2 = 77
+    
+    def on_show_view(self):
+        """ This is run once when we switch to this view """
+        arcade.set_background_color(arcade.csscolor.STEEL_BLUE)
+
+        # Reset the viewport, necessary if we have a scrolling game and we need
+        # to reset the viewport back to the start so we can see what we draw.
+        arcade.set_viewport(0, self.window.width, 0, self.window.height)
+    def on_draw(self):
+        """ Draw this view """
+        self.clear()
+        self.texture = arcade.load_texture("./img/views/start.jpg")
+        self.texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.texture2 = arcade.load_texture("./img/views/startmenu1.png")
+        self.texture2.draw_sized(self.x1, self.y1, self.w1, self.h1) #координаты по ширине и высоте, размеры ширина и высота
+        self.texture3 = arcade.load_texture("./img/views/startmenu2.png")
+        self.texture3.draw_sized(self.x2, self.y2, self.w2, self.h2)
+        
+        
+        
+        
+        #self.texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
+        #                        SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4)
+        #arcade.draw_text("Приключения Алисы", self.window.width / 2, self.window.height / 3 * 2,
+        #                 arcade.color.WHITE, font_size=30, anchor_x="center")
+        #arcade.draw_text("Старт", self.window.width / 2, self.window.height / 3,
+        #                 arcade.color.BLACK, font_size=20, anchor_x="center")
+
+    def on_mouse_motion(self, _x, _y, _dx, _dy):
+        if _x >=500 and _x<=750 and _y<=440 and _y>=350:
+            self.w1 = 235*1.2
+            self.h1 = 77*1.2
+        elif _x >=500 and _x<=750 and _y<=240 and _y>=150:
+            self.w2 = 235*1.2
+            self.h2 = 77*1.2            
+        else:
+            self.w1 = 235
+            self.h1 = 77            
+            self.w2 = 235
+            self.h2 = 77
+            
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        """ If the user presses the mouse button, start the game. """
+        if _x >=500 and _x<=750 and _y<=440 and _y>=350:
+            game_view = GameView()
+            game_view.setup()
+            self.window.show_view(game_view)
+        elif _x >=500 and _x<=750 and _y<=240 and _y>=150:
+            self.window.close()
+                         
+class GameOverView(arcade.View):
+    """ View to show when game is over """
+
+    def __init__(self):
+        """ This is run once when we switch to this view """
+        super().__init__()
+        self.texture = arcade.load_texture("./img/game_over.png")
+        
+
+        # Reset the viewport, necessary if we have a scrolling game and we need
+        # to reset the viewport back to the start so we can see what we draw.
+        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+        
+        
+    def on_draw(self):
+        """ Draw this view """
+        self.clear()
+        self.texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
+                                SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4)
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        """ If the user presses the mouse button, re-start the game. """
+        game_view = GameView()
+        game_view.setup()
+        self.window.show_view(game_view)
+
+                         
+
 def main():
-    """Main function"""
-    window = MyGame()
-    window.setup()
+    """ Main function """
+
+    window = arcade.Window(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
+    start_view = StartView()
+    window.show_view(start_view)
     arcade.run()
 
 
