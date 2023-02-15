@@ -41,6 +41,9 @@ LAYER_NAME_DONT_TOUCH = "dont_touch"
 LAYER_NAME_LADDERS = "ladders"
 LAYER_NAME_PLAYER = "Player"
 
+#начальное значение жизней
+START_HEALS = 0
+
 def load_texture_pair(filename):
     """
     Load a texture pair, with the second being a mirror image.
@@ -153,7 +156,7 @@ class GameView(arcade.View):
     Main application class.
     """
 
-    def __init__(self, level):
+    def __init__(self, level, heals):
 
         # Call the parent class and set up the window
         #super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT,SCREEN_TITLE, resizable=True)
@@ -206,7 +209,7 @@ class GameView(arcade.View):
         self.level = level
         self.reset_score = True
 
-        
+        self.heals = heals
 
         # Load sounds
         self.cat_sound = arcade.load_sound("./sounds/cat.mp3")
@@ -233,9 +236,6 @@ class GameView(arcade.View):
             "pets": {
                 "use_spatial_hash": True,
             },
-            "home3": {
-                "use_spatial_hash": True,
-            },
             "table": {
                 "use_spatial_hash": True,
             },
@@ -243,6 +243,12 @@ class GameView(arcade.View):
                 "use_spatial_hash": True,
             },
             "ladder": {
+                "use_spatial_hash": True,
+            },
+            "exit": {
+                "use_spatial_hash": True,
+            },
+            "heals": {
                 "use_spatial_hash": True,
             },
         }
@@ -307,6 +313,7 @@ class GameView(arcade.View):
         pets_name_now = self.pets_name[self.level - 1]
         
         score_text = f"{pets_name_now}: {self.score} из {max_score_now}"
+        heals_text = f"Жизней = {self.heals}"
         
         '''
         if self.level == 1:
@@ -319,6 +326,12 @@ class GameView(arcade.View):
         arcade.draw_text(score_text,
                          start_x=10,
                          start_y=10,
+                         color=arcade.csscolor.WHITE,
+                         font_size=18)
+                         
+        arcade.draw_text(heals_text,
+                         start_x=10,
+                         start_y=550,
                          color=arcade.csscolor.WHITE,
                          font_size=18)
 
@@ -474,6 +487,12 @@ class GameView(arcade.View):
         exit_hit_list = arcade.check_for_collision_with_list(
             self.player_sprite, self.scene["exit"]
         )
+        
+        heals_hit_list = arcade.check_for_collision_with_list(
+            self.player_sprite, self.scene["heals"]
+        )
+        
+        
         '''
         if self.score == 1:
             self.scene["end_ladder"].visible = True
@@ -501,10 +520,17 @@ class GameView(arcade.View):
                 
                 
                 current_level = self.level
-                finish_level_view = View_dialog_level_finish(current_level)
+                current_heals = self.heals
+                finish_level_view = View_dialog_level_finish(current_level,current_heals)
                 #game_view.setup()
                 self.window.show_view(finish_level_view)
-        
+                
+        for i in heals_hit_list:
+            # Remove the coin
+            i.remove_from_sprite_lists()
+            # Add one to the score
+            self.heals += 1
+            arcade.play_sound(self.cat_sound)
         
         # Did the player fall off the map?
         if self.player_sprite.center_y < -100:
@@ -518,12 +544,18 @@ class GameView(arcade.View):
         if arcade.check_for_collision_with_list(
             self.player_sprite, self.scene[LAYER_NAME_DONT_TOUCH]
         ):
-            self.player_sprite.change_x = 0
-            self.player_sprite.change_y = 0
-            self.player_sprite.center_x = PLAYER_START_X
-            self.player_sprite.center_y = PLAYER_START_Y
+            if self.heals >= 1:
+                arcade.play_sound(self.game_over_sound)
+                self.heals -= 1
+                self.player_sprite.change_x = 0
+                self.player_sprite.change_y = 0
+                self.player_sprite.center_x = PLAYER_START_X
+                self.player_sprite.center_y = PLAYER_START_Y
+            else:
+                #game_over_view = GameOverView()
+                self.window.show_view(GameOverView())                
 
-            arcade.play_sound(self.game_over)
+            
 
    
         
@@ -616,7 +648,7 @@ class StartView(arcade.View):
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ If the user presses the mouse button, start the game. """
         if _x >=500 and _x<=750 and _y<=440 and _y>=350:
-            View1 = View_map(next_level = 1)
+            View1 = View_map(next_level = 1, heals = START_HEALS)
             #game_view.setup()
             self.window.show_view(View1)
         elif _x >=500 and _x<=750 and _y<=240 and _y>=150:
@@ -624,7 +656,7 @@ class StartView(arcade.View):
 
 class View_map(arcade.View):#карта вход в уровень 1
 
-    def __init__(self, next_level):
+    def __init__(self, next_level, heals):
         """ This is run once when we switch to this view """
         super().__init__()
         
@@ -635,6 +667,7 @@ class View_map(arcade.View):#карта вход в уровень 1
         self.w1 = 247
         self.h1 = 58
         self.next_level = next_level
+        self.heals = heals
 
     def on_show_view(self):
         """ This is run once when we switch to this view """
@@ -665,7 +698,7 @@ class View_map(arcade.View):#карта вход в уровень 1
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ If the user presses the mouse button, start the game. """
         if _x >=25 and _x<=275 and _y<=80 and _y>=20:
-            start_level_view = View_dialog_level_start(self.next_level)
+            start_level_view = View_dialog_level_start(self.next_level, self.heals)
             #game_view.setup()
             self.window.show_view(start_level_view)
 
@@ -673,13 +706,13 @@ class View_map(arcade.View):#карта вход в уровень 1
 
 class View_dialog_level_start(arcade.View):
     
-    def __init__(self, level):
+    def __init__(self, level, heals):
         """ This is run once when we switch to this view """
         super().__init__()
         
         self.window.set_mouse_visible(True)
         self.level = level
-       
+        self.heals = heals
         self.x1 = 150#координаты и размеры
         self.y1 = 50
         self.w1 = 247
@@ -714,13 +747,13 @@ class View_dialog_level_start(arcade.View):
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ If the user presses the mouse button, start the game. """
         if _x >=25 and _x<=275 and _y<=80 and _y>=20:
-            game_view = GameView(self.level)
+            game_view = GameView(self.level, self.heals)
             game_view.setup()
             self.window.show_view(game_view)
 
 class View_dialog_level_finish(arcade.View):
     
-    def __init__(self, current_level):
+    def __init__(self, current_level,current_heals):
         """ This is run once when we switch to this view """
         super().__init__()
         
@@ -731,6 +764,7 @@ class View_dialog_level_finish(arcade.View):
         self.w1 = 247
         self.h1 = 58
         self.current_level = current_level
+        self.current_heals = current_heals
 
     def on_show_view(self):
         """ This is run once when we switch to this view """
@@ -763,7 +797,8 @@ class View_dialog_level_finish(arcade.View):
         """ If the user presses the mouse button, start the game. """
         if _x >=25 and _x<=275 and _y<=80 and _y>=20:
             next_level = self.current_level + 1
-            map_view = View_map(next_level)
+            heals = self.current_heals
+            map_view = View_map(next_level, heals)
             self.window.show_view(map_view)
 
 
@@ -774,7 +809,7 @@ class GameOverView(arcade.View):
     def __init__(self):
         """ This is run once when we switch to this view """
         super().__init__()
-        self.texture = arcade.load_texture("./img/game_over.png")
+        self.texture = arcade.load_texture("./img/views/gameover.png")
         
 
         # Reset the viewport, necessary if we have a scrolling game and we need
@@ -785,14 +820,13 @@ class GameOverView(arcade.View):
     def on_draw(self):
         """ Draw this view """
         self.clear()
-        self.texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2,
-                                SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4)
+        self.texture.draw_sized(self.window.width / 2, self.window.height / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
 
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ If the user presses the mouse button, re-start the game. """
-        game_view = GameView()
-        game_view.setup()
-        self.window.show_view(game_view)
+        start_view = StartView()
+        #game_view.setup()
+        self.window.show_view(start_view)
 
                          
 
