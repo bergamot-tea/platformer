@@ -211,6 +211,8 @@ class GameView(arcade.View):
 
         self.heals = heals
 
+        self.heals_count_list = None
+
         # Load sounds
         self.cat_sound = arcade.load_sound("./sounds/cat.mp3")
         self.jump_sound = arcade.load_sound("./sounds/jump.mp3")
@@ -277,7 +279,7 @@ class GameView(arcade.View):
         self.player_sprite.center_y = PLAYER_START_Y
         self.scene.add_sprite(LAYER_NAME_PLAYER, self.player_sprite)
 
-        
+     
         
         # Calculate the right edge of the my_map in pixels
         self.end_of_map = self.tile_map.width * GRID_PIXEL_SIZE
@@ -291,6 +293,18 @@ class GameView(arcade.View):
             ladders=self.scene[LAYER_NAME_LADDERS],
             walls=self.scene[LAYER_NAME_PLATFORMS],
             )
+
+
+
+
+        self.heals_count_list = arcade.SpriteList()
+        '''
+        hhh = arcade.Sprite("./img/heals.png",1)
+        hhh.center_x = 750 * 2
+        hhh.center_y = 550 * 2          
+        self.heals_count_list.append(hhh)        
+        '''
+            
 
     def on_draw(self):
         """Render the screen."""
@@ -313,27 +327,23 @@ class GameView(arcade.View):
         pets_name_now = self.pets_name[self.level - 1]
         
         score_text = f"{pets_name_now}: {self.score} из {max_score_now}"
-        heals_text = f"Жизней = {self.heals}"
-        
-        '''
-        if self.level == 1:
-            score_text = f"Кошки: {self.score} из {max_score_now}"
-        elif self.level == 2:
-            score_text = f"Куры: {self.score} из {max_score_now}"
-        else:
-            score_text = f"Щенки: {self.score} из 3"
-        '''
+        #heals_text = f"Жизней = {self.heals}"
+
         arcade.draw_text(score_text,
                          start_x=10,
                          start_y=10,
                          color=arcade.csscolor.WHITE,
                          font_size=18)
-                         
+        '''                 
         arcade.draw_text(heals_text,
                          start_x=10,
                          start_y=550,
                          color=arcade.csscolor.WHITE,
                          font_size=18)
+        '''              
+                       
+        self.heals_count_list.draw()
+
 
     def update_player_speed(self):
 
@@ -493,6 +503,7 @@ class GameView(arcade.View):
         )
         
         
+        
         '''
         if self.score == 1:
             self.scene["end_ladder"].visible = True
@@ -506,6 +517,7 @@ class GameView(arcade.View):
             # Add one to the score
             self.score += 1
             arcade.play_sound(self.cat_sound)
+
         
         max_score_now = self.max_score[self.level - 1]
         for i in exit_hit_list:
@@ -531,6 +543,16 @@ class GameView(arcade.View):
             # Add one to the score
             self.heals += 1
             arcade.play_sound(self.cat_sound)
+            self.heals_count_list.update()
+            self.heals_count_list.draw()
+            
+        self.heals_count_list = arcade.SpriteList()
+        for a in range(self.heals):
+            hhh = arcade.Sprite("./img/heals.png",2)
+            hhh.center_x = 770 - (24 * a)
+            hhh.center_y = 570          
+            self.heals_count_list.append(hhh)     
+            
         
         # Did the player fall off the map?
         if self.player_sprite.center_y < -100:
@@ -547,6 +569,8 @@ class GameView(arcade.View):
             if self.heals >= 1:
                 arcade.play_sound(self.game_over_sound)
                 self.heals -= 1
+                self.heals_count_list.update()
+                self.heals_count_list.draw()
                 self.player_sprite.change_x = 0
                 self.player_sprite.change_y = 0
                 self.player_sprite.center_x = PLAYER_START_X
