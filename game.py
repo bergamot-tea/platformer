@@ -5,7 +5,7 @@ import arcade
 
 
 # --- Constants
-SCREEN_TITLE = "Platformer"
+SCREEN_TITLE = "Приключения Алисы"
 
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 600
@@ -43,6 +43,9 @@ LAYER_NAME_PLAYER = "Player"
 
 #начальное значение жизней
 START_HEALS = 0
+
+#нужно для джойстика, погрешность калибровки
+DEAD_ZONE = 0.05
 
 def load_texture_pair(filename):
     """
@@ -106,9 +109,12 @@ class PlayerCharacter(arcade.Sprite):
         # set_hit_box = [[-22, -64], [22, -64], [22, 28], [-22, 28]]
         self.hit_box = self.texture.hit_box_points
 
+       
+
 
     def update_animation(self, delta_time: float = 1 / 60):
 
+       
         # Figure out if we need to flip face left or right
         if self.change_x < 0 and self.character_face_direction == RIGHT_FACING:
             self.character_face_direction = LEFT_FACING
@@ -148,6 +154,7 @@ class PlayerCharacter(arcade.Sprite):
         self.texture = self.walk_textures[self.cur_texture][
             self.character_face_direction
         ]
+        
 
 
 
@@ -164,7 +171,7 @@ class GameView(arcade.View):
         super().__init__()
     
         #arcade.set_viewport(0, self.window.width, 0, self.window.height)
-        
+
         # Track the current state of what key is pressed
         self.window.set_mouse_visible(False)
         self.left_pressed = False
@@ -197,6 +204,15 @@ class GameView(arcade.View):
         
         self.max_score = [3,4,3,3,3,1] #на первом уровне 3, на втором 4 и т.д.
         self.pets_name = ['Кошки', 'Куры', 'Щенки', 'Еноты', 'Птицы', 'Медведь']
+        
+        pets_sound_file = [
+        './sounds/cat.mp3',
+        './sounds/chiken.mp3',
+        './sounds/dog.mp3',
+        './sounds/cat.mp3',
+        './sounds/beard.mp3',
+        './sounds/bear.mp3'
+        ]
 
         # What key is pressed down?
         self.left_key_down = False
@@ -214,9 +230,96 @@ class GameView(arcade.View):
         self.heals_count_list = None
 
         # Load sounds
-        self.cat_sound = arcade.load_sound("./sounds/cat.mp3")
+        pet_sound_file_now = pets_sound_file[self.level - 1]
+        self.pet_sound = arcade.load_sound(pet_sound_file_now)
+
         self.jump_sound = arcade.load_sound("./sounds/jump.mp3")
         self.game_over_sound = arcade.load_sound("./sounds/gameover.mp3")
+        self.heals_sound = arcade.load_sound("./sounds/heals.mp3")
+        self.level_end_sound = arcade.load_sound("./sounds/level_end.mp3")
+
+
+
+        #---------------------------джойстик (от сюда)------------------------
+        # Get list of game controllers that are available
+        joysticks = arcade.get_joysticks()
+        # If we have any...
+        if joysticks:
+            # Grab the first one in  the list
+            self.joystick = joysticks[0]
+            # Open it for input
+            self.joystick.open()
+            # Push this object as a handler for joystick events.
+            # Required for the on_joy* events to be called.
+            self.joystick.push_handlers(self)
+        else:
+            # Handle if there are no joysticks.
+            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            self.joystick = None
+
+    # noinspection PyMethodMayBeStatic
+    def on_joybutton_press(self, _joystick, button):
+        """ Handle button-down event for the joystick """
+        if button == 0:
+            self.up_pressed = True
+        elif button == 2:
+            self.down_pressed = True
+        else:
+            self.up_pressed = False
+            self.down_pressed = False
+        self.process_keychange()    
+        print("Button {} down (press)".format(button))
+
+    # noinspection PyMethodMayBeStatic
+    def on_joybutton_release(self, _joystick, button):
+        """ Handle button-up event for the joystick """
+        if button == 0:
+            self.up_pressed = False
+            self.jump_needs_reset = False
+        elif button == 2:
+            self.down_pressed = False
+        else:
+            pass
+        print("Button {} up(release)".format(button))
+        self.process_keychange()
+    
+    def on_joyaxis_motion(self, _joystick, axis, value):
+        print("Axis {}, value {}".format(axis, value))
+        
+        if axis == 'x':
+            if value >= DEAD_ZONE:
+                self.right_pressed = True
+            elif value <= -DEAD_ZONE:
+                self.left_pressed = True
+            else:
+                self.right_pressed = False
+                self.left_pressed = False
+        if axis == 'y':
+            if value >= DEAD_ZONE:
+                self.down_pressed = True
+            elif value <= -DEAD_ZONE:
+                self.up_pressed = True
+            else:
+                self.up_pressed = False
+                self.down_pressed = False
+                self.jump_needs_reset = False
+        else:
+            '''
+            self.right_pressed = False
+            self.left_pressed = False
+            self.up_pressed = False
+            self.down_pressed = False
+            self.jump_needs_reset = False
+            '''
+        self.process_keychange()
+
+    # noinspection PyMethodMayBeStatic
+    def on_joyhat_motion(self, _joystick, hat_x, hat_y):
+        """ Handle hat events """
+        print("Hat ({}, {})".format(hat_x, hat_y))
+    #---------------------------джойстик (до сюда)------------------------
+
+
 
     def setup(self):
         """Set up the game here. Call this function to restart the game."""
@@ -349,18 +452,20 @@ class GameView(arcade.View):
 
         # Calculate speed based on the keys pressed
         self.player_sprite.change_x = 0
-
+        
         if self.left_key_down and not self.right_key_down:
             self.player_sprite.change_x = -PLAYER_MOVEMENT_SPEED
         elif self.right_key_down and not self.left_key_down:
             self.player_sprite.change_x = PLAYER_MOVEMENT_SPEED
+
+
 
     def process_keychange(self):
         """
         Called when we change a key up/down or we move on/off a ladder.
         """
         # Process up/down
-        if self.up_pressed and not self.down_pressed:
+        if (self.up_pressed and not self.down_pressed):
             if self.physics_engine.is_on_ladder():
                 self.player_sprite.change_y = PLAYER_MOVEMENT_SPEED
             elif (
@@ -389,30 +494,7 @@ class GameView(arcade.View):
         else:
             self.player_sprite.change_x = 0
 
-    '''
-    def on_key_press(self, key, modifiers):
-        """Called whenever a key is pressed."""
 
-        # Jump and ladder
-        if key == arcade.key.UP or key == arcade.key.W:
-            if self.physics_engine.is_on_ladder():
-                self.player_sprite.change_y = PLAYER_MOVEMENT_SPEED
-            elif self.physics_engine.can_jump():
-                self.player_sprite.change_y = PLAYER_JUMP_SPEED
-                arcade.play_sound(self.jump_sound)
-        elif key == arcade.key.DOWN or key == arcade.key.S:
-            if self.physics_engine.is_on_ladder():
-                self.player_sprite.change_y = -PLAYER_MOVEMENT_SPEED
-        # Left
-        elif key == arcade.key.LEFT or key == arcade.key.A:
-            self.left_key_down = True
-            self.update_player_speed()
-
-        # Right
-        elif key == arcade.key.RIGHT or key == arcade.key.D:
-            self.right_key_down = True
-            self.update_player_speed()
-    '''
     
     def on_key_press(self, key, modifiers):
         """Called whenever a key is pressed."""
@@ -503,7 +585,6 @@ class GameView(arcade.View):
         )
         
         
-        
         '''
         if self.score == 1:
             self.scene["end_ladder"].visible = True
@@ -516,7 +597,7 @@ class GameView(arcade.View):
             coin.remove_from_sprite_lists()
             # Add one to the score
             self.score += 1
-            arcade.play_sound(self.cat_sound)
+            arcade.play_sound(self.pet_sound)
 
         
         max_score_now = self.max_score[self.level - 1]
@@ -530,7 +611,7 @@ class GameView(arcade.View):
 
                 # Load the next level
                 
-                
+                arcade.play_sound(self.level_end_sound)
                 current_level = self.level
                 current_heals = self.heals
                 finish_level_view = View_dialog_level_finish(current_level,current_heals)
@@ -542,7 +623,7 @@ class GameView(arcade.View):
             i.remove_from_sprite_lists()
             # Add one to the score
             self.heals += 1
-            arcade.play_sound(self.cat_sound)
+            arcade.play_sound(self.heals_sound)
             self.heals_count_list.update()
             self.heals_count_list.draw()
             
@@ -615,7 +696,33 @@ class StartView(arcade.View):
         self.y2 = 200
         self.w2 = 235
         self.h2 = 77
-    
+    '''
+#---------------------------джойстик (от сюда)------------------------
+        # Get list of game controllers that are available
+        joysticks = arcade.get_joysticks()
+        # If we have any...
+        if joysticks:
+            # Grab the first one in  the list
+            self.joystick = joysticks[0]
+            # Open it for input
+            self.joystick.open()
+            # Push this object as a handler for joystick events.
+            # Required for the on_joy* events to be called.
+            self.joystick.push_handlers(self)
+        else:
+            # Handle if there are no joysticks.
+            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            self.joystick = None
+            
+    def on_joybutton_press(self, _joystick, button):
+        """ Handle button-down event for the joystick """
+        if button == 7:
+            View1 = View_map(next_level = 1, heals = START_HEALS)
+            #game_view.setup()
+            self.window.show_view(View1) 
+        print("Button {} down (press)".format(button))
+                #---------------------------джойстик (до сюда)------------------------         
+    '''
     def on_show_view(self):
         """ This is run once when we switch to this view """
         arcade.set_background_color(arcade.csscolor.STEEL_BLUE)
@@ -660,9 +767,11 @@ class StartView(arcade.View):
         if _x >=500 and _x<=750 and _y<=440 and _y>=350:
             self.w1 = 235*1.2
             self.h1 = 77*1.2
+            
         elif _x >=500 and _x<=750 and _y<=240 and _y>=150:
             self.w2 = 235*1.2
-            self.h2 = 77*1.2            
+            self.h2 = 77*1.2
+                     
         else:
             self.w1 = 235
             self.h1 = 77            
@@ -692,7 +801,33 @@ class View_map(arcade.View):#карта вход в уровень 1
         self.h1 = 58
         self.next_level = next_level
         self.heals = heals
-
+    '''
+                #---------------------------джойстик (от сюда)------------------------
+        # Get list of game controllers that are available
+        joysticks = arcade.get_joysticks()
+        # If we have any...
+        if joysticks:
+            # Grab the first one in  the list
+            self.joystick = joysticks[0]
+            # Open it for input
+            self.joystick.open()
+            # Push this object as a handler for joystick events.
+            # Required for the on_joy* events to be called.
+            self.joystick.push_handlers(self)
+        else:
+            # Handle if there are no joysticks.
+            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            self.joystick = None
+            
+    def on_joybutton_press(self, _joystick, button):
+        """ Handle button-down event for the joystick """
+        if button == 7:
+            start_level_view = View_dialog_level_start(self.next_level, self.heals)
+            #game_view.setup()
+            self.window.show_view(start_level_view)  
+        print("Button {} down (press)".format(button))
+                #---------------------------джойстик (до сюда)------------------------        
+    '''
     def on_show_view(self):
         """ This is run once when we switch to this view """
         arcade.set_background_color(arcade.csscolor.STEEL_BLUE)
@@ -727,13 +862,11 @@ class View_map(arcade.View):#карта вход в уровень 1
             self.window.show_view(start_level_view)
 
 
-
 class View_dialog_level_start(arcade.View):
     
     def __init__(self, level, heals):
         """ This is run once when we switch to this view """
         super().__init__()
-        
         self.window.set_mouse_visible(True)
         self.level = level
         self.heals = heals
@@ -741,7 +874,37 @@ class View_dialog_level_start(arcade.View):
         self.y1 = 50
         self.w1 = 247
         self.h1 = 58
-
+    '''
+                #---------------------------джойстик (от сюда)------------------------
+        # Get list of game controllers that are available
+        joysticks = arcade.get_joysticks()
+        # If we have any...
+        if joysticks:
+            # Grab the first one in  the list
+            self.joystick = joysticks[0]
+            # Open it for input
+            self.joystick.open()
+            # Push this object as a handler for joystick events.
+            # Required for the on_joy* events to be called.
+            self.joystick.push_handlers(self)
+        else:
+            # Handle if there are no joysticks.
+            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            self.joystick = None
+            
+    def on_joybutton_press(self, _joystick, button):
+        """ Handle button-down event for the joystick """
+        if button == 7:
+            if self.level == 7:
+                game_finish_view = GameFinishView()
+                self.window.show_view(game_finish_view)                
+            else:
+                game_view = GameView(self.level, self.heals)
+                game_view.setup()
+                self.window.show_view(game_view)
+        print("Button {} down (press)".format(button))
+                #---------------------------джойстик (до сюда)------------------------ 
+    '''   
     def on_show_view(self):
         """ This is run once when we switch to this view """
         arcade.set_background_color(arcade.csscolor.STEEL_BLUE)
@@ -771,9 +934,13 @@ class View_dialog_level_start(arcade.View):
     def on_mouse_press(self, _x, _y, _button, _modifiers):
         """ If the user presses the mouse button, start the game. """
         if _x >=25 and _x<=275 and _y<=80 and _y>=20:
-            game_view = GameView(self.level, self.heals)
-            game_view.setup()
-            self.window.show_view(game_view)
+            if self.level == 7:
+                game_finish_view = GameFinishView()
+                self.window.show_view(game_finish_view)                
+            else:
+                game_view = GameView(self.level, self.heals)
+                game_view.setup()
+                self.window.show_view(game_view)
 
 class View_dialog_level_finish(arcade.View):
     
@@ -789,7 +956,34 @@ class View_dialog_level_finish(arcade.View):
         self.h1 = 58
         self.current_level = current_level
         self.current_heals = current_heals
-
+    '''
+                #---------------------------джойстик (от сюда)------------------------
+        # Get list of game controllers that are available
+        joysticks = arcade.get_joysticks()
+        # If we have any...
+        if joysticks:
+            # Grab the first one in  the list
+            self.joystick = joysticks[0]
+            # Open it for input
+            self.joystick.open()
+            # Push this object as a handler for joystick events.
+            # Required for the on_joy* events to be called.
+            self.joystick.push_handlers(self)
+        else:
+            # Handle if there are no joysticks.
+            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            self.joystick = None
+            
+    def on_joybutton_press(self, _joystick, button):
+        """ Handle button-down event for the joystick """
+        if button == 7:
+            next_level = self.current_level + 1
+            heals = self.current_heals
+            map_view = View_map(next_level, heals)
+            self.window.show_view(map_view)
+        print("Button {} down (press)".format(button))
+                #---------------------------джойстик (до сюда)------------------------
+    '''
     def on_show_view(self):
         """ This is run once when we switch to this view """
         arcade.set_background_color(arcade.csscolor.STEEL_BLUE)
@@ -833,14 +1027,89 @@ class GameOverView(arcade.View):
     def __init__(self):
         """ This is run once when we switch to this view """
         super().__init__()
-        self.texture = arcade.load_texture("./img/views/gameover.png")
+        self.texture = arcade.load_texture("./img/views/gameover.jpg")
         
 
         # Reset the viewport, necessary if we have a scrolling game and we need
         # to reset the viewport back to the start so we can see what we draw.
         arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+    '''    
+                        #---------------------------джойстик (от сюда)------------------------
+        # Get list of game controllers that are available
+        joysticks = arcade.get_joysticks()
+        # If we have any...
+        if joysticks:
+            # Grab the first one in  the list
+            self.joystick = joysticks[0]
+            # Open it for input
+            self.joystick.open()
+            # Push this object as a handler for joystick events.
+            # Required for the on_joy* events to be called.
+            self.joystick.push_handlers(self)
+        else:
+            # Handle if there are no joysticks.
+            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            self.joystick = None
+            
+    def on_joybutton_press(self, _joystick, button):
+        """ Handle button-down event for the joystick """
+        if button == 7:
+            start_view = StartView()
+            #game_view.setup()
+            self.window.show_view(start_view)
+        print("Button {} down (press)".format(button))
+                #---------------------------джойстик (до сюда)------------------------
+    '''    
+    def on_draw(self):
+        """ Draw this view """
+        self.clear()
+        self.texture.draw_sized(self.window.width / 2, self.window.height / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    def on_mouse_press(self, _x, _y, _button, _modifiers):
+        """ If the user presses the mouse button, re-start the game. """
+        start_view = StartView()
+        #game_view.setup()
+        self.window.show_view(start_view)
+
+class GameFinishView(arcade.View):
+    """ View to show when game is over """
+
+    def __init__(self):
+        """ This is run once when we switch to this view """
+        super().__init__()
+        self.texture = arcade.load_texture("./img/views/success.jpg")
         
-        
+
+        # Reset the viewport, necessary if we have a scrolling game and we need
+        # to reset the viewport back to the start so we can see what we draw.
+        arcade.set_viewport(0, SCREEN_WIDTH - 1, 0, SCREEN_HEIGHT - 1)
+    '''
+                        #---------------------------джойстик (от сюда)------------------------
+        # Get list of game controllers that are available
+        joysticks = arcade.get_joysticks()
+        # If we have any...
+        if joysticks:
+            # Grab the first one in  the list
+            self.joystick = joysticks[0]
+            # Open it for input
+            self.joystick.open()
+            # Push this object as a handler for joystick events.
+            # Required for the on_joy* events to be called.
+            self.joystick.push_handlers(self)
+        else:
+            # Handle if there are no joysticks.
+            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            self.joystick = None
+            
+    def on_joybutton_press(self, _joystick, button):
+        """ Handle button-down event for the joystick """
+        if button == 7:
+            start_view = StartView()
+            #game_view.setup()
+            self.window.show_view(start_view)
+        print("Button {} down (press)".format(button))
+                #---------------------------джойстик (до сюда)------------------------        
+    '''    
     def on_draw(self):
         """ Draw this view """
         self.clear()
