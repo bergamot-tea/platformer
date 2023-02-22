@@ -79,7 +79,7 @@ class PlayerCharacter(arcade.Sprite):
 
         # --- Load Textures ---
 
-        main_path = "./img/player/player"
+        main_path = "./data/img/player/player"
 
         # Load textures for idle standing
         self.idle_texture_pair = load_texture_pair(f"{main_path}_idle.png")
@@ -206,12 +206,12 @@ class GameView(arcade.View):
         self.pets_name = ['Кошки', 'Куры', 'Щенки', 'Еноты', 'Птицы', 'Медведь']
         
         pets_sound_file = [
-        './sounds/cat.mp3',
-        './sounds/chiken.mp3',
-        './sounds/dog.mp3',
-        './sounds/cat.mp3',
-        './sounds/beard.mp3',
-        './sounds/bear.mp3'
+        "./data/sounds/cat.mp3",
+        "./data/sounds/chiken.mp3",
+        "./data/sounds/dog.mp3",
+        "./data/sounds/cat.mp3",
+        "./data/sounds/beard.mp3",
+        "./data/sounds/bear.mp3"
         ]
 
         # What key is pressed down?
@@ -233,10 +233,10 @@ class GameView(arcade.View):
         pet_sound_file_now = pets_sound_file[self.level - 1]
         self.pet_sound = arcade.load_sound(pet_sound_file_now)
 
-        self.jump_sound = arcade.load_sound("./sounds/jump.mp3")
-        self.game_over_sound = arcade.load_sound("./sounds/gameover.mp3")
-        self.heals_sound = arcade.load_sound("./sounds/heals.mp3")
-        self.level_end_sound = arcade.load_sound("./sounds/level_end.mp3")
+        self.jump_sound = arcade.load_sound("./data/sounds/jump.mp3")
+        self.game_over_sound = arcade.load_sound("./data/sounds/gameover.mp3")
+        self.heals_sound = arcade.load_sound("./data/sounds/heals.mp3")
+        self.level_end_sound = arcade.load_sound("./data/sounds/level_end.mp3")
 
 
 
@@ -254,7 +254,7 @@ class GameView(arcade.View):
             self.joystick.push_handlers(self)
         else:
             # Handle if there are no joysticks.
-            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            ##print("Не вижу джойстик, подключи джойстик и попробуй снова")
             self.joystick = None
 
     # noinspection PyMethodMayBeStatic
@@ -268,7 +268,7 @@ class GameView(arcade.View):
             self.up_pressed = False
             self.down_pressed = False
         self.process_keychange()    
-        print("Button {} down (press)".format(button))
+        #print("Button {} down (press)".format(button))
 
     # noinspection PyMethodMayBeStatic
     def on_joybutton_release(self, _joystick, button):
@@ -280,11 +280,11 @@ class GameView(arcade.View):
             self.down_pressed = False
         else:
             pass
-        print("Button {} up(release)".format(button))
+        #print("Button {} up(release)".format(button))
         self.process_keychange()
     
     def on_joyaxis_motion(self, _joystick, axis, value):
-        print("Axis {}, value {}".format(axis, value))
+        #print("Axis {}, value {}".format(axis, value))
         
         if axis == 'x':
             if value >= DEAD_ZONE:
@@ -316,7 +316,7 @@ class GameView(arcade.View):
     # noinspection PyMethodMayBeStatic
     def on_joyhat_motion(self, _joystick, hat_x, hat_y):
         """ Handle hat events """
-        print("Hat ({}, {})".format(hat_x, hat_y))
+        #print("Hat ({}, {})".format(hat_x, hat_y))
     #---------------------------джойстик (до сюда)------------------------
 
 
@@ -329,7 +329,7 @@ class GameView(arcade.View):
         self.camera_gui = arcade.Camera(self.window.width, self.window.height)
 
         # Name of map file to load
-        map_name = f"./level_{self.level}.json"
+        map_name = f"./data/level_{self.level}.json"
 
         # Layer specific options are defined based on Layer names in a dictionary
         # Doing this will make the SpriteList for the platforms layer
@@ -402,7 +402,7 @@ class GameView(arcade.View):
 
         self.heals_count_list = arcade.SpriteList()
         '''
-        hhh = arcade.Sprite("./img/heals.png",1)
+        hhh = arcade.Sprite("./data/img/heals.png",1)
         hhh.center_x = 750 * 2
         hhh.center_y = 550 * 2          
         self.heals_count_list.append(hhh)        
@@ -629,7 +629,7 @@ class GameView(arcade.View):
             
         self.heals_count_list = arcade.SpriteList()
         for a in range(self.heals):
-            hhh = arcade.Sprite("./img/heals.png",2)
+            hhh = arcade.Sprite("./data/img/heals.png",2)
             hhh.center_x = 770 - (24 * a)
             hhh.center_y = 570          
             self.heals_count_list.append(hhh)     
@@ -711,7 +711,7 @@ class StartView(arcade.View):
             self.joystick.push_handlers(self)
         else:
             # Handle if there are no joysticks.
-            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            ##print("Не вижу джойстик, подключи джойстик и попробуй снова")
             self.joystick = None
             
     def on_joybutton_press(self, _joystick, button):
@@ -720,7 +720,7 @@ class StartView(arcade.View):
             View1 = View_map(next_level = 1, heals = START_HEALS)
             #game_view.setup()
             self.window.show_view(View1) 
-        print("Button {} down (press)".format(button))
+        #print("Button {} down (press)".format(button))
                 #---------------------------джойстик (до сюда)------------------------         
     '''
     def on_show_view(self):
@@ -733,12 +733,12 @@ class StartView(arcade.View):
     def on_draw(self):
         """ Draw this view """
         self.clear()
-        self.texture = arcade.load_texture("./img/views/start.jpg")
+        self.texture = arcade.load_texture("./data/img/views/start.jpg")
         #self.texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
         self.texture.draw_sized(self.window.width / 2, self.window.height / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.texture2 = arcade.load_texture("./img/views/startmenu1.png")
+        self.texture2 = arcade.load_texture("./data/img/views/startmenu1.png")
         self.texture2.draw_sized(self.x1, self.y1, self.w1, self.h1) #координаты по ширине и высоте, размеры ширина и высота
-        self.texture3 = arcade.load_texture("./img/views/startmenu2.png")
+        self.texture3 = arcade.load_texture("./data/img/views/startmenu2.png")
         self.texture3.draw_sized(self.x2, self.y2, self.w2, self.h2)
     '''    
     def on_key_press(self, key, modifiers):
@@ -816,7 +816,7 @@ class View_map(arcade.View):#карта вход в уровень 1
             self.joystick.push_handlers(self)
         else:
             # Handle if there are no joysticks.
-            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            ##print("Не вижу джойстик, подключи джойстик и попробуй снова")
             self.joystick = None
             
     def on_joybutton_press(self, _joystick, button):
@@ -825,7 +825,7 @@ class View_map(arcade.View):#карта вход в уровень 1
             start_level_view = View_dialog_level_start(self.next_level, self.heals)
             #game_view.setup()
             self.window.show_view(start_level_view)  
-        print("Button {} down (press)".format(button))
+        #print("Button {} down (press)".format(button))
                 #---------------------------джойстик (до сюда)------------------------        
     '''
     def on_show_view(self):
@@ -838,10 +838,10 @@ class View_map(arcade.View):#карта вход в уровень 1
     def on_draw(self):
         """ Draw this view """
         self.clear()
-        self.texture = arcade.load_texture(f"./img/views/map_{self.next_level}.jpg")
+        self.texture = arcade.load_texture(f"./data/img/views/map_{self.next_level}.jpg")
         #self.texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
         self.texture.draw_sized(self.window.width / 2, self.window.height / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.texture2 = arcade.load_texture("./img/views/next.png")
+        self.texture2 = arcade.load_texture("./data/img/views/next.png")
         self.texture2.draw_sized(self.x1, self.y1, self.w1, self.h1) #координаты по ширине и высоте, размеры ширина и высота
 
 
@@ -889,7 +889,7 @@ class View_dialog_level_start(arcade.View):
             self.joystick.push_handlers(self)
         else:
             # Handle if there are no joysticks.
-            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            ##print("Не вижу джойстик, подключи джойстик и попробуй снова")
             self.joystick = None
             
     def on_joybutton_press(self, _joystick, button):
@@ -902,7 +902,7 @@ class View_dialog_level_start(arcade.View):
                 game_view = GameView(self.level, self.heals)
                 game_view.setup()
                 self.window.show_view(game_view)
-        print("Button {} down (press)".format(button))
+        #print("Button {} down (press)".format(button))
                 #---------------------------джойстик (до сюда)------------------------ 
     '''   
     def on_show_view(self):
@@ -915,10 +915,10 @@ class View_dialog_level_start(arcade.View):
     def on_draw(self):
         """ Draw this view """
         self.clear()
-        self.texture = arcade.load_texture(f"./img/views/level_{self.level}_start.jpg")
+        self.texture = arcade.load_texture(f"./data/img/views/level_{self.level}_start.jpg")
         #self.texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
         self.texture.draw_sized(self.window.width / 2, self.window.height / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.texture2 = arcade.load_texture("./img/views/next.png")
+        self.texture2 = arcade.load_texture("./data/img/views/next.png")
         self.texture2.draw_sized(self.x1, self.y1, self.w1, self.h1) #координаты по ширине и высоте, размеры ширина и высота
 
 
@@ -971,7 +971,7 @@ class View_dialog_level_finish(arcade.View):
             self.joystick.push_handlers(self)
         else:
             # Handle if there are no joysticks.
-            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            ##print("Не вижу джойстик, подключи джойстик и попробуй снова")
             self.joystick = None
             
     def on_joybutton_press(self, _joystick, button):
@@ -981,7 +981,7 @@ class View_dialog_level_finish(arcade.View):
             heals = self.current_heals
             map_view = View_map(next_level, heals)
             self.window.show_view(map_view)
-        print("Button {} down (press)".format(button))
+        #print("Button {} down (press)".format(button))
                 #---------------------------джойстик (до сюда)------------------------
     '''
     def on_show_view(self):
@@ -995,10 +995,10 @@ class View_dialog_level_finish(arcade.View):
         """ Draw this view """
         self.clear()
         
-        self.texture = arcade.load_texture(f"./img/views/level_{self.current_level}_finish.jpg")
+        self.texture = arcade.load_texture(f"./data/img/views/level_{self.current_level}_finish.jpg")
         #self.texture.draw_sized(SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
         self.texture.draw_sized(self.window.width / 2, self.window.height / 2, SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.texture2 = arcade.load_texture("./img/views/next.png")
+        self.texture2 = arcade.load_texture("./data/img/views/next.png")
         self.texture2.draw_sized(self.x1, self.y1, self.w1, self.h1) #координаты по ширине и высоте, размеры ширина и высота
 
 
@@ -1027,7 +1027,7 @@ class GameOverView(arcade.View):
     def __init__(self):
         """ This is run once when we switch to this view """
         super().__init__()
-        self.texture = arcade.load_texture("./img/views/gameover.jpg")
+        self.texture = arcade.load_texture("./data/img/views/gameover.jpg")
         
 
         # Reset the viewport, necessary if we have a scrolling game and we need
@@ -1048,7 +1048,7 @@ class GameOverView(arcade.View):
             self.joystick.push_handlers(self)
         else:
             # Handle if there are no joysticks.
-            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            ##print("Не вижу джойстик, подключи джойстик и попробуй снова")
             self.joystick = None
             
     def on_joybutton_press(self, _joystick, button):
@@ -1057,7 +1057,7 @@ class GameOverView(arcade.View):
             start_view = StartView()
             #game_view.setup()
             self.window.show_view(start_view)
-        print("Button {} down (press)".format(button))
+        #print("Button {} down (press)".format(button))
                 #---------------------------джойстик (до сюда)------------------------
     '''    
     def on_draw(self):
@@ -1077,7 +1077,7 @@ class GameFinishView(arcade.View):
     def __init__(self):
         """ This is run once when we switch to this view """
         super().__init__()
-        self.texture = arcade.load_texture("./img/views/success.jpg")
+        self.texture = arcade.load_texture("./data/img/views/success.jpg")
         
 
         # Reset the viewport, necessary if we have a scrolling game and we need
@@ -1098,7 +1098,7 @@ class GameFinishView(arcade.View):
             self.joystick.push_handlers(self)
         else:
             # Handle if there are no joysticks.
-            print("Не вижу джойстик, подключи джойстик и попробуй снова")
+            ##print("Не вижу джойстик, подключи джойстик и попробуй снова")
             self.joystick = None
             
     def on_joybutton_press(self, _joystick, button):
@@ -1107,7 +1107,7 @@ class GameFinishView(arcade.View):
             start_view = StartView()
             #game_view.setup()
             self.window.show_view(start_view)
-        print("Button {} down (press)".format(button))
+        #print("Button {} down (press)".format(button))
                 #---------------------------джойстик (до сюда)------------------------        
     '''    
     def on_draw(self):
